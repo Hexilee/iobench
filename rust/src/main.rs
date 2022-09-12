@@ -7,7 +7,7 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use uuid::Uuid;
 
-const DATA: [u8; 4096] = ['0' as u8; 4096];
+const DATA: [u8; 4096] = [b'0'; 4096];
 
 async fn fast_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
     Ok(Response::new(Body::from(DATA.as_slice())))
