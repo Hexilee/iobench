@@ -1,11 +1,16 @@
 DATA_DIR?=./data
-OUTPUT_DIR?=./OUTPUT_DIR
+OUTPUT_DIR?=./output
+HOST?=localhost
+TARGET?=slow
 CARGO_DEV_OPTIONS=--manifest-path=rust/Cargo.toml
 
-run-rust-server:
+bench: ensure-bench-tool
+	$(OUTPUT_DIR)/bin/oha -z 30s https://$(localhost):8000/$(TARGET)
+
+run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release
 
-run-go-server:
+run-go-server: ensure-data
 	cd go && go run main.go
 
 clean: clean-rust
@@ -45,3 +50,13 @@ fmt-go:
 
 lint-go:
 	cd go && go vet
+
+ensure-output:
+	mkdir -p $(OUTPUT_DIR)
+
+ensure-data:
+	mkdir -p $(DATA_DIR)
+
+ensure-bench-tool: ensure-output
+	cargo install oha --root $(OUTPUT_DIR)
+	chmod +x $(OUTPUT_DIR)/bin/oha

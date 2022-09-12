@@ -1,4 +1,4 @@
 target/
 data/
-bin/
+output/
 go/go

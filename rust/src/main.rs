@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::fs::{remove_file, File};
 use std::io::Write;
 use std::net::SocketAddr;
+use std::path::Path;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
@@ -28,11 +29,12 @@ async fn slow_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible>
 
 fn slow_task() -> anyhow::Result<()> {
     let filename = Uuid::new_v4().to_string();
-    let mut file = File::create(&filename)?;
+    let filepath = Path::new("./data").join(filename);
+    let mut file = File::create(&filepath)?;
     file.write_all(DATA.as_slice())?;
     file.sync_all()?;
     drop(file);
-    remove_file(&filename)?;
+    remove_file(&filepath)?;
     Ok(())
 }
 

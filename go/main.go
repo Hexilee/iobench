@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"path"
 
 	"github.com/google/uuid"
 )
@@ -15,8 +16,8 @@ func fastHandler(w http.ResponseWriter, r *http.Request) {
 
 func slowHandler(w http.ResponseWriter, r *http.Request) {
 	err := func() error {
-		filename := uuid.New().String()
-		file, err := os.Create(filename)
+		filepath := path.Join("../data", uuid.New().String())
+		file, err := os.Create(filepath)
 		if err != nil {
 			return err
 		}
@@ -33,7 +34,7 @@ func slowHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		return os.Remove(filename)
+		return os.Remove(filepath)
 	}()
 
 	if err != nil {
