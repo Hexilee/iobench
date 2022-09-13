@@ -2,6 +2,13 @@
 
 IO/Network benchmark comparison between different languages in different cases.
 
+## Prepare
+
+Install toolchain:
+
+- Go
+- Rust (cargo)
+
 ## Start server
 
 Start the target server you would like to test.
