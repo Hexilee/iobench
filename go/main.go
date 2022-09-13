@@ -21,16 +21,13 @@ func slowHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
+		defer file.Close()
 
 		_, err = file.Write(data)
 		if err != nil {
 			return err
 		}
 		err = file.Sync()
-		if err != nil {
-			return err
-		}
-		err = file.Close()
 		if err != nil {
 			return err
 		}
