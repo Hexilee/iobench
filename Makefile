@@ -11,7 +11,7 @@ run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release
 
 run-go-server: ensure-data
-	cd go && go run main.go
+	cd go && go run .
 
 clean: clean-rust
 	rm -rf $(OUTPUT_DIR)
