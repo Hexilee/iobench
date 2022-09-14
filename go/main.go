@@ -11,8 +11,8 @@ import (
 func fastHandler(w http.ResponseWriter, r *http.Request) {
 	data, err := os.ReadFile("../data/data.txt")
 	if err != nil {
-		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 	w.Write(data)
@@ -43,8 +43,8 @@ func slowHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if err != nil {
-		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 	w.Write(data)
