@@ -1,4 +1,4 @@
-DATA_DIR?=./data
+DATA_TMP_DIR?=./data/tmp
 OUTPUT_DIR?=./output
 HOST?=localhost
 TARGET?=slow
@@ -55,7 +55,7 @@ ensure-output:
 	mkdir -p $(OUTPUT_DIR)
 
 ensure-data:
-	mkdir -p $(DATA_DIR)
+	mkdir -p $(DATA_TMP_DIR)
 
 ensure-bench-tool: ensure-output
 	cargo install oha --root $(OUTPUT_DIR)

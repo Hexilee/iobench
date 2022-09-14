@@ -8,30 +8,38 @@ import (
 	"github.com/google/uuid"
 )
 
-var data = make([]byte, 4096)
-
 func fastHandler(w http.ResponseWriter, r *http.Request) {
+	data, err := os.ReadFile("../data/data.txt")
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Write(data)
 }
 
 func slowHandler(w http.ResponseWriter, r *http.Request) {
-	err := func() error {
-		filepath := path.Join("../data", uuid.New().String())
+	data, err := func() ([]byte, error) {
+		filepath := path.Join("../data/tmp/", uuid.New().String())
 		file, err := os.Create(filepath)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		defer file.Close()
+		data, err := os.ReadFile("../data/data.txt")
+		if err != nil {
+			return nil, err
+		}
 
 		_, err = file.Write(data)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		err = file.Sync()
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return os.Remove(filepath)
+		return data, os.Remove(filepath)
 	}()
 
 	if err != nil {
@@ -43,9 +51,6 @@ func slowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	for i := range data {
-		data[i] = '0'
-	}
 	http.HandleFunc("/fast", fastHandler)
 	http.HandleFunc("/slow", slowHandler)
 	http.ListenAndServe(":8000", nil)
