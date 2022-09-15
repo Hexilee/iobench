@@ -58,5 +58,4 @@ ensure-data:
 	mkdir -p $(DATA_TMP_DIR)
 
 ensure-bench-tool: ensure-output
-	cargo install oha --root $(OUTPUT_DIR)
-	chmod +x $(OUTPUT_DIR)/bin/oha
+	if [ ! -f $(OUTPUT_DIR)/bin/oha ]; then cargo install oha --root $(OUTPUT_DIR) && chmod +x $(OUTPUT_DIR)/bin/oha; fi
