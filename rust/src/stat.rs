@@ -87,7 +87,7 @@ impl StatResult {
         } else {
             durations.sort();
             let len = durations.len();
-            Some(Self {
+            let result = Self {
                 percent_10: durations[len / 10],
                 percent_25: durations[len / 4],
                 percent_50: durations[len / 2],
@@ -95,7 +95,9 @@ impl StatResult {
                 percent_90: durations[len * 9 / 10],
                 percent_95: durations[len * 19 / 20],
                 percent_99: durations[len * 99 / 100],
-            })
+            };
+            durations.clear();
+            Some(result)
         }
     }
 }
@@ -104,7 +106,7 @@ impl Display for StatResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "10% in {:?}\n25% in {:?}\n50% in {:?}\n75% in {:?}\n90% in {:?}\n95% in {:?}\n99% in {:?}\n",
+            "\nIO Latency distribution:\n  10% in {:?}\n  25% in {:?}\n  50% in {:?}\n  75% in {:?}\n  90% in {:?}\n  95% in {:?}\n  99% in {:?}\n",
             self.percent_10,
             self.percent_25,
             self.percent_50,

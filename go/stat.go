@@ -33,6 +33,7 @@ func NewIOStat(ctx context.Context, bufferSize int) *IOStat {
 				durations = append(durations, dur)
 			case cb := <-ioStat.statChan:
 				cb <- stat(durations)
+				durations = durations[:0]
 			}
 		}
 	}()
@@ -79,12 +80,14 @@ func stat(durations []time.Duration) *StatResult {
 }
 
 func (statResult *StatResult) String() string {
-	return `10% in ` + statResult.Percent10.String() + `
-25% in ` + statResult.Percent25.String() + `
-50% in ` + statResult.Percent50.String() + `
-75% in ` + statResult.Percent75.String() + `
-90% in ` + statResult.Percent90.String() + `
-95% in ` + statResult.Percent95.String() + `
-99% in ` + statResult.Percent99.String() + `
+	return `
+IO Latency distribution:
+  10% in ` + statResult.Percent10.String() + `
+  25% in ` + statResult.Percent25.String() + `
+  50% in ` + statResult.Percent50.String() + `
+  75% in ` + statResult.Percent75.String() + `
+  90% in ` + statResult.Percent90.String() + `
+  95% in ` + statResult.Percent95.String() + `
+  99% in ` + statResult.Percent99.String() + `
 `
 }
