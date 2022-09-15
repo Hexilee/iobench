@@ -7,6 +7,9 @@ CARGO_DEV_OPTIONS=--manifest-path=rust/Cargo.toml
 bench: ensure-bench-tool
 	$(OUTPUT_DIR)/bin/oha -c 200 -z 30s http://$(HOST):8000/$(TARGET)
 
+io-stat:
+	curl http://$(HOST):8000/stat/$(TARGET)
+
 run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release
 

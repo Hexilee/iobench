@@ -104,7 +104,7 @@ impl Display for StatResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "10% in {:?}\n25% in {:?}\n50% in {:?}\n75%: {:?}\n90%: {:?}\n95%: {:?}\n99%: {:?}\n",
+            "10% in {:?}\n25% in {:?}\n50% in {:?}\n75% in {:?}\n90% in {:?}\n95% in {:?}\n99% in {:?}\n",
             self.percent_10,
             self.percent_25,
             self.percent_50,
