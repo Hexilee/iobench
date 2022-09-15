@@ -1,16 +1,18 @@
+#![feature(async_closure)]
+
 use std::convert::Infallible;
 use std::fs::{read, remove_file, File};
 use std::io::Write;
 use std::net::SocketAddr;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Instant;
 
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server, StatusCode};
+use hyper::{Body, Response, Server, StatusCode};
 use once_cell::sync::Lazy;
-use uuid::Uuid;
-
 use stat::IOStat;
+use uuid::Uuid;
 
 mod stat;
 
@@ -41,22 +43,6 @@ async fn stat_task(stat: &IOStat) -> Result<Response<Body>, Infallible> {
     })))
 }
 
-async fn fast_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    handle_task(|| read("./data/data.txt"), &*FAST_STAT).await
-}
-
-async fn slow_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    handle_task(slow_task, &*SLOW_STAT).await
-}
-
-async fn stat_fast_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    stat_task(&*FAST_STAT).await
-}
-
-async fn stat_slow_handler(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    stat_task(&*SLOW_STAT).await
-}
-
 fn slow_task() -> anyhow::Result<Vec<u8>> {
     let data = read("./data/data.txt")?;
     let filename = Uuid::new_v4().to_string();
@@ -71,20 +57,39 @@ fn slow_task() -> anyhow::Result<Vec<u8>> {
 
 #[tokio::main]
 async fn main() {
+    let guard = Arc::new(
+        pprof::ProfilerGuardBuilder::default()
+            .frequency(1000)
+            .build()
+            .unwrap(),
+    );
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
-    let make_svc = make_service_fn(|_conn| async {
-        Ok::<_, Infallible>(service_fn(|req| async {
-            match req.uri().path() {
-                "/fast" => fast_handler(req).await,
-                "/slow" => slow_handler(req).await,
-                "/stat/fast" => stat_fast_handler(req).await,
-                "/stat/slow" => stat_slow_handler(req).await,
-                _ => Ok(Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::empty())
-                    .unwrap()),
-            }
-        }))
+    let make_svc = make_service_fn(|_conn| {
+        let guard_ref = guard.clone();
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req| {
+                let guard_ref = guard_ref.clone();
+                async move {
+                    match req.uri().path() {
+                        "/fast" => handle_task(|| read("./data/data.txt"), &*FAST_STAT).await,
+                        "/slow" => handle_task(slow_task, &*SLOW_STAT).await,
+                        "/stat/fast" => stat_task(&*FAST_STAT).await,
+                        "/stat/slow" => stat_task(&*SLOW_STAT).await,
+                        "/flamegraph.svg" => {
+                            let mut graph = Vec::new();
+                            if let Ok(report) = guard_ref.report().build() {
+                                report.flamegraph(&mut graph).unwrap();
+                            }
+                            Ok(Response::new(Body::from(graph)))
+                        }
+                        _ => Ok(Response::builder()
+                            .status(StatusCode::NOT_FOUND)
+                            .body(Body::empty())
+                            .unwrap()),
+                    }
+                }
+            }))
+        }
     });
 
     let server = Server::bind(&addr).serve(make_svc);
