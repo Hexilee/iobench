@@ -2,12 +2,14 @@
 
 use std::convert::Infallible;
 use std::fs::{read, remove_file, File};
+use std::future::Future;
 use std::io::Write;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 
+use futures::FutureExt;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Response, Server, StatusCode};
 use once_cell::sync::Lazy;
@@ -20,11 +22,11 @@ static FAST_STAT: Lazy<IOStat> = Lazy::new(|| IOStat::start());
 static SLOW_STAT: Lazy<IOStat> = Lazy::new(|| IOStat::start());
 
 async fn handle_task<E: 'static + Send + ToString>(
-    task: fn() -> Result<Vec<u8>, E>,
+    task: impl Future<Output = Result<Vec<u8>, E>>,
     stat: &IOStat,
 ) -> Result<Response<Body>, Infallible> {
     let start = Instant::now();
-    match tokio::task::spawn_blocking(task).await.expect("join err") {
+    match task.await {
         Ok(data) => {
             stat.collect(start.elapsed());
             Ok(Response::new(Body::from(data)))
@@ -71,8 +73,17 @@ async fn main() {
                 let guard_ref = guard_ref.clone();
                 async move {
                     match req.uri().path() {
-                        "/fast" => handle_task(|| read("./data/data.txt"), &*FAST_STAT).await,
-                        "/slow" => handle_task(slow_task, &*SLOW_STAT).await,
+                        "/fast" => {
+                            handle_task(async { read("./data/data.txt") }, &*FAST_STAT).await
+                        }
+                        "/slow" => {
+                            handle_task(
+                                tokio::task::spawn_blocking(slow_task)
+                                    .map(|v| v.expect("join task")),
+                                &*SLOW_STAT,
+                            )
+                            .await
+                        }
                         "/stat/fast" => stat_task(&*FAST_STAT).await,
                         "/stat/slow" => stat_task(&*SLOW_STAT).await,
                         "/flamegraph.svg" => {
