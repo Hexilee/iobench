@@ -46,7 +46,7 @@ async fn stat_task(stat: &IOStat) -> Result<Response<Body>, Infallible> {
 }
 
 fn slow_task() -> anyhow::Result<Vec<u8>> {
-    let data = read("./data/data.txt")?;
+    let data = read("./data/data")?;
     let filename = Uuid::new_v4().to_string();
     let filepath = Path::new("./data/tmp").join(filename);
     let mut file = File::create(&filepath)?;
@@ -73,9 +73,7 @@ async fn main() {
                 let guard_ref = guard_ref.clone();
                 async move {
                     match req.uri().path() {
-                        "/fast" => {
-                            handle_task(async { read("./data/data.txt") }, &*FAST_STAT).await
-                        }
+                        "/fast" => handle_task(async { read("./data/data") }, &*FAST_STAT).await,
                         "/slow" => {
                             handle_task(
                                 tokio::task::spawn_blocking(slow_task)
