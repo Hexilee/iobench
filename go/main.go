@@ -2,18 +2,29 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/google/uuid"
 )
 
 var (
 	slowStat = NewIOStat(context.TODO(), 10000)
 	fastStat = NewIOStat(context.TODO(), 100000)
+	mockStat = NewIOStat(context.TODO(), 100000)
 )
+
+func mockHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	data := mockRead()
+	mockStat.Collect(time.Since(start))
+	w.Write(data)
+}
 
 func fastHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
@@ -69,9 +80,14 @@ func statHandler(ioStat *IOStat) func(http.ResponseWriter, *http.Request) {
 }
 
 func main() {
+	fmt.Printf("Fake: latency(%s), bandwidth(%s), bucket-size(%d)\n", latency, humanize.IBytes(bandwidth), len(bucket))
+	fmt.Println("Starting server...")
+
 	http.HandleFunc("/fast", fastHandler)
 	http.HandleFunc("/slow", slowHandler)
+	http.HandleFunc("/mock", mockHandler)
 	http.HandleFunc("/stat/fast", statHandler(fastStat))
 	http.HandleFunc("/stat/slow", statHandler(slowStat))
+	http.HandleFunc("/stat/mock", statHandler(mockStat))
 	http.ListenAndServe(":8000", nil)
 }
