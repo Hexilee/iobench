@@ -2,6 +2,7 @@ DATA_TMP_DIR?=./data/tmp
 OUTPUT_DIR?=./output
 HOST?=localhost
 PORT?=8000
+HTTP2_PORT?=8443
 TARGET?=slow
 GOMAXPROCS?=16
 MOCK_BANDWIDTH?=100GiB
@@ -10,8 +11,11 @@ WORKERS?=400
 TIME?=30s
 CARGO_DEV_OPTIONS=--manifest-path=rust/Cargo.toml
 
+bench-http2: ensure-bench-tool
+	$(OUTPUT_DIR)/bin/oha -c $(WORKERS) -z $(TIME) --http-version=2 --insecure https://$(HOST):$(HTTP2_PORT)/$(TARGET) && curl --insecure https://$(HOST):$(HTTP2_PORT)/stat/$(TARGET)
+
 bench: ensure-bench-tool
-	$(OUTPUT_DIR)/bin/oha -c $(WORKERS) -z $(TIME) --http-version=2 --insecure https://$(HOST):$(PORT)/$(TARGET) && curl --insecure https://$(HOST):$(PORT)/stat/$(TARGET)
+	$(OUTPUT_DIR)/bin/oha -c $(WORKERS) -z $(TIME) http://$(HOST):$(PORT)/$(TARGET) && curl http://$(HOST):$(PORT)/stat/$(TARGET)
 
 run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release

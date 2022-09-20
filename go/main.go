@@ -13,11 +13,18 @@ import (
 
 func main() {
 	fmt.Printf("Fake: latency(%s), bandwidth(%s), bucket-size(%d)\n", latency, humanize.IBytes(bandwidth), len(bucket))
-	fmt.Println("Starting server...")
 
 	go func() {
+		fmt.Println("Starting fasthttp server on :8001...")
 		if err := fasthttp.ListenAndServe(":8001", fastHttpHandler); err != nil {
-			log.Fatalf("Error in ListenAndServe: %v", err)
+			log.Fatalf("Error in fasthttp ListenAndServe: %v", err)
+		}
+	}()
+
+	go func() {
+		fmt.Println("Starting http2 server on :8443...")
+		if err := http.ListenAndServeTLS(":8443", "../output/server.crt", "../output/server.key", nil); err != nil {
+			log.Fatalf("Error in ListenAndServeTLS: %v", err)
 		}
 	}()
 
@@ -28,7 +35,9 @@ func main() {
 	http.HandleFunc("/stat/slow", statHandler(slowStat))
 	http.HandleFunc("/stat/mock", statHandler(mockStat))
 	http.Handle("/debug/fgprof", fgprof.Handler())
-	if err := http.ListenAndServeTLS(":8000", "../output/server.crt", "../output/server.key", nil); err != nil {
-		log.Fatalf("Error in ListenAndServeTLS: %v", err)
+
+	fmt.Println("Starting http1 server on :8000...")
+	if err := http.ListenAndServe(":8000", nil); err != nil {
+		log.Fatalf("Error in ListenAndServe: %v", err)
 	}
 }
