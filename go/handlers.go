@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -19,7 +18,6 @@ var (
 )
 
 func mockHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Proto)
 	start := time.Now()
 	data := mockRead()
 	mockStat.Collect(time.Since(start))

@@ -8,6 +8,7 @@ Install toolchain:
 
 - Go
 - Rust (cargo)
+- [nghttp2](https://github.com/nghttp2/nghttp2)
 
 ## Start server
 
