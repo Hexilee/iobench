@@ -28,5 +28,7 @@ func main() {
 	http.HandleFunc("/stat/slow", statHandler(slowStat))
 	http.HandleFunc("/stat/mock", statHandler(mockStat))
 	http.Handle("/debug/fgprof", fgprof.Handler())
-	http.ListenAndServe(":8000", nil)
+	if err := http.ListenAndServeTLS(":8000", "../output/server.crt", "../output/server.key", nil); err != nil {
+		log.Fatalf("Error in ListenAndServeTLS: %v", err)
+	}
 }
