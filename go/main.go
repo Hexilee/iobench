@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/felixge/fgprof"
 	"github.com/google/uuid"
 )
 
@@ -89,5 +90,6 @@ func main() {
 	http.HandleFunc("/stat/fast", statHandler(fastStat))
 	http.HandleFunc("/stat/slow", statHandler(slowStat))
 	http.HandleFunc("/stat/mock", statHandler(mockStat))
+	http.Handle("/debug/fgprof", fgprof.Handler())
 	http.ListenAndServe(":8000", nil)
 }
