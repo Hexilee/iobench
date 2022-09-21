@@ -17,10 +17,10 @@ bench: ensure-bench-tool
 	$(OUTPUT_DIR)/bin/oha -c $(WORKERS) -z $(TIME) http://$(HOST):$(PORT)/$(TARGET) && curl http://$(HOST):$(PORT)/stat/$(TARGET)
 
 bench-h2c:
-	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 http://$(HOST):$(H2C_PORT)/$(TARGET) && curl http://$(HOST):$(H2C_PORT)/stat/$(TARGET)
+	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 -f 128K http://$(HOST):$(H2C_PORT)/$(TARGET) && curl http://$(HOST):$(H2C_PORT)/stat/$(TARGET)
 
 bench-http2:
-	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 https://$(HOST):$(HTTP2_PORT)/$(TARGET) && curl --insecure https://$(HOST):$(HTTP2_PORT)/stat/$(TARGET)
+	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 -f 128K https://$(HOST):$(HTTP2_PORT)/$(TARGET) && curl --insecure https://$(HOST):$(HTTP2_PORT)/stat/$(TARGET)
 
 run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release
