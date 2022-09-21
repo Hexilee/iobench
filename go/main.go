@@ -41,7 +41,18 @@ func main() {
 		}
 		fmt.Println("Starting h2c server on :8002...")
 		if err := server.ListenAndServe(); err != nil {
-			log.Fatalf("Error in ListenAndServeTLS: %v", err)
+			log.Fatalf("Error in h2c ListenAndServe: %v", err)
+		}
+	}()
+
+	go func() {
+		server := http.Server{
+			Addr:    ":8443",
+			Handler: mux,
+		}
+		fmt.Println("Starting http2 server on :8443...")
+		if err := server.ListenAndServeTLS("../output/server.crt", "../output/server.key"); err != nil {
+			log.Fatalf("Error in http2 ListenAndServeTLS: %v", err)
 		}
 	}()
 
@@ -51,6 +62,6 @@ func main() {
 		Handler: mux,
 	}
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Error in ListenAndServe: %v", err)
+		log.Fatalf("Error in http1 ListenAndServe: %v", err)
 	}
 }
