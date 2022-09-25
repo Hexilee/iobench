@@ -11,6 +11,8 @@ import (
 	"github.com/valyala/fasthttp"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"github.com/hexilee/iobench/go/gorpc"
 )
 
 func main() {
@@ -53,6 +55,13 @@ func main() {
 		fmt.Println("Starting http2 server on :8443...")
 		if err := server.ListenAndServeTLS("../output/server.crt", "../output/server.key"); err != nil {
 			log.Fatalf("Error in http2 ListenAndServeTLS: %v", err)
+		}
+	}()
+
+	go func() {
+		fmt.Println("Starting gorpc server on :8003...")
+		if err := gorpc.ListenAndServe(":8003"); err != nil {
+			log.Fatal("gorpc server failed: ", err)
 		}
 	}()
 

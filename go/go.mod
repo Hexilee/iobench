@@ -7,6 +7,7 @@ require (
 	github.com/felixge/fgprof v0.9.3
 	github.com/google/uuid v1.3.0
 	github.com/valyala/fasthttp v1.40.0
+	github.com/valyala/gorpc v0.0.0-20160519171614-908281bef774
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 )
 
