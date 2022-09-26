@@ -4,6 +4,7 @@ HOST?=localhost
 PORT?=8000
 H2C_PORT?=8002
 HTTP2_PORT?=8443
+TCP_PORT?=8004
 TARGET?=slow
 GOMAXPROCS?=16
 MOCK_BANDWIDTH?=100GiB
@@ -21,6 +22,9 @@ bench-h2c:
 
 bench-http2:
 	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 -f 128K https://$(HOST):$(HTTP2_PORT)/$(TARGET) && curl --insecure https://$(HOST):$(HTTP2_PORT)/stat/$(TARGET)
+
+bench-tcp: 
+	cd go/client/tcp && TIME=$(TIME) TCP_PORT=$(TCP_PORT) go run .
 
 run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release
@@ -55,16 +59,16 @@ lint-rust:
 	cargo clippy $(CARGO_DEV_OPTIONS)
 
 build-go:
-	cd go && go build
+	cd go && go build ./...
 
 test-go:
-	cd go && go test
+	cd go && go test ./...
 
 fmt-go:
-	cd go && go fmt
+	cd go && go fmt ./...
 
 lint-go:
-	cd go && go vet
+	cd go && go vet ./...
 
 ensure-output:
 	mkdir -p $(OUTPUT_DIR)

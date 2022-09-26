@@ -65,6 +65,13 @@ func main() {
 		}
 	}()
 
+	go func() {
+		fmt.Println("Starting tcp server on :8004...")
+		if err := NewTCPFileServer("../data/data").ListenAndServe(":8004"); err != nil {
+			log.Fatal("tcp server failed: ", err)
+		}
+	}()
+
 	fmt.Println("Starting http1 server on :8000...")
 	server := http.Server{
 		Addr:    ":8000",
