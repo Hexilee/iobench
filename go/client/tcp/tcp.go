@@ -49,13 +49,13 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer stream.Close()
 	start := time.Now()
 	var eg errgroup.Group
 	bytes := new(atomic.Uint64)
 
 	for i := 0; i < int(workers); i++ {
 		eg.Go(func() error {
+			defer stream.Close()
 			buffer := make([]byte, 128<<10)
 			for {
 				n, err := stream.Read(buffer)
