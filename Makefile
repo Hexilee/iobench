@@ -24,7 +24,7 @@ bench-http2:
 	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 -f 128K https://$(HOST):$(HTTP2_PORT)/$(TARGET) && curl --insecure https://$(HOST):$(HTTP2_PORT)/stat/$(TARGET)
 
 bench-tcp: 
-	cd go/client/tcp && TIME=$(TIME) TCP_PORT=$(TCP_PORT) go run .
+	cd go/client/tcp && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) TCP_PORT=$(TCP_PORT) go run .
 
 run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release

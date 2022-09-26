@@ -6,14 +6,17 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
 	duration time.Duration
-	port     uint16
+	port     uint64
+	workers  uint64
 )
 
 func init() {
@@ -26,35 +29,50 @@ func init() {
 	}
 
 	if pstr := os.Getenv("TCP_PORT"); pstr != "" {
-		p, err := strconv.ParseUint(pstr, 10, 16)
+		port, err = strconv.ParseUint(pstr, 10, 16)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		port = uint16(p)
+	}
+
+	if w := os.Getenv("WORKERS"); w != "" {
+		workers, err = strconv.ParseUint(w, 10, 16)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }
 
 func main() {
-	fmt.Printf("Dialing server :%d...\n", port)
+	fmt.Printf("Dialing server :%d with %d workers...\n", port, workers)
 	stream, err := net.Dial("tcp", "localhost:"+strconv.Itoa(int(port)))
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer stream.Close()
 	start := time.Now()
-	buffer := make([]byte, 128<<10)
-	bytes := 0
-	for {
-		n, err := stream.Read(buffer)
-		if err != nil {
-			duration = time.Since(start)
-			break
-		}
-		bytes += n
-		if elapsed := time.Since(start); elapsed > duration {
-			duration = elapsed
-			break
-		}
+	var eg errgroup.Group
+	bytes := new(atomic.Uint64)
+
+	for i := 0; i < int(workers); i++ {
+		eg.Go(func() error {
+			buffer := make([]byte, 128<<10)
+			for {
+				n, err := stream.Read(buffer)
+				if err != nil {
+					return err
+				}
+				bytes.Add(uint64(n))
+				if time.Since(start) >= duration {
+					return err
+				}
+			}
+		})
 	}
-	fmt.Printf("read %s in %s, throughput: %s/s\n", humanize.Bytes(uint64(bytes)), duration, humanize.Bytes(uint64(float64(bytes)/duration.Seconds())))
+
+	if err := eg.Wait(); err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("read %s in %s, throughput: %s/s\n", humanize.Bytes(bytes.Load()), duration, humanize.Bytes(uint64(float64(bytes.Load())/duration.Seconds())))
 }

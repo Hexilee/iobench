@@ -9,6 +9,7 @@ require (
 	github.com/valyala/fasthttp v1.40.0
 	github.com/valyala/gorpc v0.0.0-20160519171614-908281bef774
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
+	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7
 )
 
 require (
