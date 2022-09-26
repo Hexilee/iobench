@@ -60,11 +60,11 @@ func main() {
 			for {
 				n, err := stream.Read(buffer)
 				if err != nil {
-					return err
+					return nil
 				}
 				bytes.Add(uint64(n))
 				if time.Since(start) >= duration {
-					return err
+					return nil
 				}
 			}
 		})

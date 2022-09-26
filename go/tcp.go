@@ -51,7 +51,7 @@ func (s *TCPFileServer) handleConn(conn net.Conn) {
 				}
 				if _, err := conn.Write(chunk[:n]); err != nil {
 					log.Println(err)
-					return false
+					return true
 				}
 			}
 		}()
