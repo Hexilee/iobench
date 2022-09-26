@@ -35,6 +35,7 @@ func init() {
 }
 
 func main() {
+	fmt.Printf("Dialing server :%d...\n", port)
 	stream, err := net.Dial("tcp", "localhost:"+strconv.Itoa(int(port)))
 	if err != nil {
 		log.Fatalln(err)

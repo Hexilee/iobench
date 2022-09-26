@@ -72,6 +72,13 @@ func main() {
 		}
 	}()
 
+	go func() {
+		fmt.Println("Starting sendfile server on :8005...")
+		if err := NewSendFileServer("../data/data").ListenAndServe(":8005"); err != nil {
+			log.Fatal("sendfile server failed: ", err)
+		}
+	}()
+
 	fmt.Println("Starting http1 server on :8000...")
 	server := http.Server{
 		Addr:    ":8000",

@@ -32,15 +32,30 @@ func (s *TCPFileServer) ListenAndServe(addr string) error {
 
 func (s *TCPFileServer) handleConn(conn net.Conn) {
 	defer conn.Close()
+	chunk := make([]byte, 128<<10)
 	for {
-		file, err := os.OpenFile(s.path, os.O_RDONLY, 0)
-		if err != nil {
-			log.Println(err)
-			break
-		}
-		_, err = io.Copy(conn, file)
-		if err != nil {
-			log.Println(err)
+		isBreak := func() bool {
+			file, err := os.OpenFile(s.path, os.O_RDONLY, 0)
+			if err != nil {
+				log.Println(err)
+				return true
+			}
+			defer file.Close()
+			for {
+				n, err := file.Read(chunk)
+				if err != nil {
+					if err != io.EOF {
+						log.Println(err)
+					}
+					return false
+				}
+				if _, err := conn.Write(chunk[:n]); err != nil {
+					log.Println(err)
+					return false
+				}
+			}
+		}()
+		if isBreak {
 			break
 		}
 	}
