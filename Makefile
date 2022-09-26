@@ -4,6 +4,7 @@ HOST?=localhost
 PORT?=8000
 H2C_PORT?=8002
 HTTP2_PORT?=8443
+GORPC_PORT?=8003
 TCP_PORT?=8004
 TARGET?=slow
 GOMAXPROCS?=16
@@ -25,6 +26,9 @@ bench-http2:
 
 bench-tcp: 
 	cd go/client/tcp && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) TCP_PORT=$(TCP_PORT) go run .
+
+bench-gorpc: 
+	cd go/client/gorpc && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) SESSIONS=64 GORPC_PORT=$(GORPC_PORT) go run .
 
 run-rust-server: ensure-data
 	cargo run $(CARGO_DEV_OPTIONS) --release

@@ -1,4 +1,4 @@
-package gorpc
+package gorpcbench
 
 import (
 	"os"
