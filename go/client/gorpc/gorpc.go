@@ -56,7 +56,7 @@ func main() {
 	fmt.Printf("Dialing server :%d with %d x workers(%d) sessions...\n", port, sessions, workers)
 	clients := make([]*gorpc.DispatcherClient, 0, workers)
 	for i := 0; i < int(workers); i++ {
-		clients = append(clients, gorpcbench.NewClient("localhost:"+strconv.Itoa(int(port))))
+		clients = append(clients, gorpcbench.NewClient("localhost:"+strconv.Itoa(int(port)), 1))
 	}
 	start := time.Now()
 	var eg errgroup.Group
