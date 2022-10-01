@@ -69,13 +69,7 @@ func main() {
 					if err != nil {
 						return err
 					}
-					// if body.Body != nil {
-					// 	data, err := io.ReadAll(body.Body)
-					// 	if err != nil {
-					// 		return err
-					// 	}
-					// 	bytes.Add(uint64(len(data)))
-					// }
+
 					if time.Since(start) >= duration {
 						return err
 					}

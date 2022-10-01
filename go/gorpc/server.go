@@ -16,15 +16,15 @@ func ListenAndServe(addr string) error {
 
 		// Echo handler - just return back the message we received from the client
 		Handler: func(clientAddr string, request gorpc.Request) gorpc.Response {
-			if r, ok := request.Body.(io.ReadCloser); ok {
-				r.Close()
+			if request.Body != nil {
+				request.Body.Close()
 			}
 			file, err := os.OpenFile("../data/data", os.O_RDONLY, 0)
 			if err != nil {
 				buf := bytes.NewBufferString(err.Error())
 				return gorpc.Response{
 					Size: uint64(buf.Len()),
-					Body: buf,
+					Body: io.NopCloser(buf),
 				}
 			}
 			stat, err := file.Stat()
@@ -32,7 +32,7 @@ func ListenAndServe(addr string) error {
 				buf := bytes.NewBufferString(err.Error())
 				return gorpc.Response{
 					Size: uint64(buf.Len()),
-					Body: buf,
+					Body: io.NopCloser(buf),
 				}
 			}
 			return gorpc.Response{
@@ -41,5 +41,6 @@ func ListenAndServe(addr string) error {
 			}
 		},
 	}
+	s.CloseBody = true
 	return s.Serve()
 }

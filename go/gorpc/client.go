@@ -9,6 +9,7 @@ func NewClient(addr string, conns int) *gorpc.Client {
 	c := gorpc.NewTCPClient(addr)
 	c.DisableCompression = true
 	c.Conns = conns
+	c.CloseBody = true
 	c.Start()
 	return c
 }
