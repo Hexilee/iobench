@@ -4,11 +4,11 @@ import (
 	"github.com/valyala/gorpc"
 )
 
-func NewClient(addr string, conns int) *gorpc.DispatcherClient {
+func NewClient(addr string, conns int) *gorpc.Client {
 	// Start rpc client connected to the server.
 	c := gorpc.NewTCPClient(addr)
 	c.DisableCompression = true
 	c.Conns = conns
 	c.Start()
-	return newDispatcher().NewFuncClient(c)
+	return c
 }

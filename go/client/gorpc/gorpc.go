@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -54,24 +53,29 @@ func init() {
 
 func main() {
 	fmt.Printf("Dialing server :%d with %d x workers(%d) sessions...\n", port, sessions, workers)
-	clients := make([]*gorpc.DispatcherClient, 0, workers)
+	clients := make([]*gorpc.Client, 0, workers)
 	for i := 0; i < int(workers); i++ {
 		clients = append(clients, gorpcbench.NewClient("localhost:"+strconv.Itoa(int(port)), 1))
 	}
 	start := time.Now()
 	var eg errgroup.Group
-	bytes := new(atomic.Uint64)
 
 	for c := 0; c < len(clients); c++ {
 		client := clients[c]
 		for i := 0; i < int(sessions); i++ {
 			eg.Go(func() error {
 				for {
-					data, err := client.Call("Get", nil)
+					_, err := client.Call(gorpc.Request{})
 					if err != nil {
 						return err
 					}
-					bytes.Add(uint64(len(data.([]byte))))
+					// if body.Body != nil {
+					// 	data, err := io.ReadAll(body.Body)
+					// 	if err != nil {
+					// 		return err
+					// 	}
+					// 	bytes.Add(uint64(len(data)))
+					// }
 					if time.Since(start) >= duration {
 						return err
 					}
@@ -84,5 +88,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	fmt.Printf("read %s in %s, throughput: %s/s\n", humanize.Bytes(bytes.Load()), duration, humanize.Bytes(uint64(float64(bytes.Load())/duration.Seconds())))
+	bytes := uint64(0)
+	for _, c := range clients {
+		bytes += c.Stats.BytesRead
+	}
+
+	fmt.Printf("read %s in %s, throughput: %s/s\n", humanize.Bytes(bytes), duration, humanize.Bytes(uint64(float64(bytes)/duration.Seconds())))
 }
