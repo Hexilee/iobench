@@ -1,7 +1,7 @@
 package gorpcbench
 
 import (
-	"bytes"
+	"errors"
 	"io"
 	"os"
 	"sync"
@@ -43,32 +43,28 @@ func ListenAndServe(addr string) error {
 		Addr: addr,
 
 		// Echo handler - just return back the message we received from the client
-		Handler: func(clientAddr string, request gorpc.Request) gorpc.Response {
+		Handler: func(clientAddr string, request gorpc.Request) (*gorpc.Response, error) {
 			if request.Body != nil {
 				request.Body.Close()
 			}
+			// if len(request.Headers) != 0 {
+
+			// }
+
 			switch ret := filePool.Get().(type) {
 			case error:
-				buf := bytes.NewBufferString(ret.Error())
-				return gorpc.Response{
-					Size: uint64(buf.Len()),
-					Body: io.NopCloser(buf),
-				}
+				return nil, ret
 			case *File:
 				stat, err := ret.Stat()
 				if err != nil {
-					buf := bytes.NewBufferString(err.Error())
-					return gorpc.Response{
-						Size: uint64(buf.Len()),
-						Body: io.NopCloser(buf),
-					}
+					return nil, err
 				}
-				return gorpc.Response{
+				return &gorpc.Response{
 					Size: uint64(stat.Size()),
 					Body: ret,
-				}
+				}, nil
 			default:
-				panic("unreachable")
+				return nil, errors.New("unknown type in file pool")
 			}
 		},
 	}
