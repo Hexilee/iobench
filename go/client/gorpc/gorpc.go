@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strconv"
 	"time"
@@ -13,11 +14,20 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type Mode string
+
+const (
+	modeWithHeaders  = "with-headers"
+	modeRandomOffset = "random"
+)
+
 var (
 	duration time.Duration
 	port     uint64
 	workers  uint64
 	sessions uint64
+
+	mode Mode
 )
 
 func init() {
@@ -49,6 +59,10 @@ func init() {
 			log.Fatalln(err)
 		}
 	}
+
+	if m := os.Getenv("MODE"); m != "" {
+		mode = Mode(m)
+	}
 }
 
 func main() {
@@ -65,7 +79,21 @@ func main() {
 		for i := 0; i < int(sessions); i++ {
 			eg.Go(func() error {
 				for {
-					_, err := client.Call(gorpc.Request{})
+					req := gorpc.Request{}
+					if mode == modeWithHeaders {
+						req.Headers = map[string]any{
+							"Size":   uint64(128 * 1024),
+							"Offset": uint64(0),
+						}
+					}
+
+					if mode == modeRandomOffset {
+						req.Headers = map[string]any{
+							"Size":   uint64(128 * 1024),
+							"Offset": rand.Uint64() % (60 * 1024 * 1024 * 1024),
+						}
+					}
+					_, err := client.Call(req)
 					if err != nil {
 						return err
 					}
