@@ -27,17 +27,18 @@ bench-http2:
 bench-tcp: 
 	cd go/client/tcp && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) TCP_PORT=$(TCP_PORT) go run .
 
-bench-gorpc: 
+bench-gorpc:
 	cd go/client/gorpc && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) SESSIONS=64 GORPC_PORT=$(GORPC_PORT) go run .
 
-run-rust-server: ensure-data
+run-rust-server: ensure-bigdata 
 	cargo run $(CARGO_DEV_OPTIONS) --release
 
-run-go-server: ensure-data ensure-cert
+run-go-server: ensure-bigdata ensure-cert
 	cd go && GOMAXPROCS=$(GOMAXPROCS) MOCK_BANDWIDTH=$(MOCK_BANDWIDTH) MOCK_LATENCY=$(MOCK_LATENCY) go run .
 
 clean: clean-rust
 	rm -rf $(OUTPUT_DIR)
+	rm -rf $(DATA_TMP_DIR)
 
 check: check-rust build-go
 
@@ -85,3 +86,7 @@ ensure-bench-tool: ensure-output
 
 ensure-cert: ensure-output
 	if [ ! -f $(OUTPUT_DIR)/server.key ]; then openssl req -newkey rsa:2048 -nodes -keyout $(OUTPUT_DIR)/server.key -x509 -days 365 -out $(OUTPUT_DIR)/server.crt; fi
+
+ensure-bigdata: ensure-data
+	if [ ! -f $(DATA_TMP_DIR)/bigdata ]; then dd if=/dev/urandom of=$(DATA_TMP_DIR)/bigdata bs=64M count=1024; fi
+
