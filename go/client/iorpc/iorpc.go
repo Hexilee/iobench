@@ -127,5 +127,10 @@ func main() {
 		bodyBytes += s.BodyRead
 	}
 
-	fmt.Printf("read %s in %s, throughput: %s/s\n", humanize.Bytes(bodyBytes+headBytes), cost, humanize.Bytes(uint64(float64(bodyBytes+headBytes)/cost.Seconds())))
+	fmt.Printf(`
+Summary:
+    Read %s of head and %s of body in %s, total throughput: %s/s	
+    `,
+		humanize.Bytes(headBytes), humanize.Bytes(bodyBytes), cost, humanize.Bytes(uint64(float64(bodyBytes+headBytes)/cost.Seconds())),
+	)
 }
