@@ -1,12 +1,12 @@
-package gorpcbench
+package iorpcbench
 
 import (
-	"github.com/valyala/gorpc"
+	"github.com/hexilee/iorpc"
 )
 
-func NewClient(addr string, conns int) *gorpc.Client {
+func NewClient(addr string, conns int) *iorpc.Client {
 	// Start rpc client connected to the server.
-	c := gorpc.NewTCPClient(addr)
+	c := iorpc.NewTCPClient(addr)
 	c.DisableCompression = true
 	c.Conns = conns
 	c.CloseBody = true

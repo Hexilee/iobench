@@ -1,4 +1,4 @@
-package gorpcbench
+package iorpcbench
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/valyala/gorpc"
+	"github.com/hexilee/iorpc"
 )
 
 var filePool = sync.Pool{
@@ -44,12 +44,12 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 
 func ListenAndServe(addr string) error {
 	// Start rpc server serving registered service.
-	s := &gorpc.Server{
+	s := &iorpc.Server{
 		// Accept clients on this TCP address.
 		Addr: addr,
 
 		// Echo handler - just return back the message we received from the client
-		Handler: func(clientAddr string, request gorpc.Request) (*gorpc.Response, error) {
+		Handler: func(clientAddr string, request iorpc.Request) (*iorpc.Response, error) {
 			if request.Body != nil {
 				request.Body.Close()
 			}
@@ -88,7 +88,7 @@ func ListenAndServe(addr string) error {
 					size = uint64(fileSize) - offset
 				}
 				ret.Limit = size
-				return &gorpc.Response{
+				return &iorpc.Response{
 					Size: size,
 					Body: ret,
 				}, nil

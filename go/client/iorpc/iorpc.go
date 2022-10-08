@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	gorpcbench "github.com/hexilee/iobench/go/gorpc"
-	"github.com/valyala/gorpc"
+	iorpcbench "github.com/hexilee/iobench/go/iorpc"
+	"github.com/hexilee/iorpc"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -39,7 +39,7 @@ func init() {
 		}
 	}
 
-	if pstr := os.Getenv("GORPC_PORT"); pstr != "" {
+	if pstr := os.Getenv("IORPC_PORT"); pstr != "" {
 		port, err = strconv.ParseUint(pstr, 10, 16)
 		if err != nil {
 			log.Fatalln(err)
@@ -67,9 +67,9 @@ func init() {
 
 func main() {
 	fmt.Printf("Dialing server :%d with %d x workers(%d) sessions...\n", port, sessions, workers)
-	clients := make([]*gorpc.Client, 0, workers)
+	clients := make([]*iorpc.Client, 0, workers)
 	for i := 0; i < int(workers); i++ {
-		clients = append(clients, gorpcbench.NewClient("localhost:"+strconv.Itoa(int(port)), 1))
+		clients = append(clients, iorpcbench.NewClient("localhost:"+strconv.Itoa(int(port)), 1))
 	}
 	start := time.Now()
 	var eg errgroup.Group
@@ -79,7 +79,7 @@ func main() {
 		for i := 0; i < int(sessions); i++ {
 			eg.Go(func() error {
 				for {
-					req := gorpc.Request{}
+					req := iorpc.Request{}
 					if mode == modeWithHeaders {
 						req.Headers = map[string]any{
 							"Size":   uint64(128 * 1024),

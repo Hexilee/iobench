@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	gorpcbench "github.com/hexilee/iobench/go/gorpc"
+	iorpcbench "github.com/hexilee/iobench/go/iorpc"
 )
 
 func main() {
@@ -59,9 +59,9 @@ func main() {
 	}()
 
 	go func() {
-		fmt.Println("Starting gorpc server on :8003...")
-		if err := gorpcbench.ListenAndServe(":8003"); err != nil {
-			log.Fatal("gorpc server failed: ", err)
+		fmt.Println("Starting iorpc server on :8003...")
+		if err := iorpcbench.ListenAndServe(":8003"); err != nil {
+			log.Fatal("iorpc server failed: ", err)
 		}
 	}()
 
