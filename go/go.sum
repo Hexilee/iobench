@@ -18,6 +18,8 @@ github.com/hexilee/iorpc v0.0.0-20221007173013-749fb060637d h1:+pppQ9WPuIHkvJ5iD
 github.com/hexilee/iorpc v0.0.0-20221007173013-749fb060637d/go.mod h1:3M/VNy50nLZM+BFiE14TFyrHvhmGGp2GiW4WmK3K5zk=
 github.com/hexilee/iorpc v0.0.0-20221007174059-8a2b53111783 h1:xr6W5x4xjISP1zLJDkizOnOX4MvDGuDacg8DrgMYNHk=
 github.com/hexilee/iorpc v0.0.0-20221007174059-8a2b53111783/go.mod h1:3M/VNy50nLZM+BFiE14TFyrHvhmGGp2GiW4WmK3K5zk=
+github.com/hexilee/iorpc v0.0.0-20221008174116-71f3f8f795c5 h1:U/gKEpEd8s+FPl6F62Ifq4sGLletZSmmATa6/yKDabo=
+github.com/hexilee/iorpc v0.0.0-20221008174116-71f3f8f795c5/go.mod h1:3M/VNy50nLZM+BFiE14TFyrHvhmGGp2GiW4WmK3K5zk=
 github.com/ianlancetaylor/demangle v0.0.0-20210905161508-09a460cdf81d/go.mod h1:aYm2/VgdVmcIU8iMfdMvDMsRAQjcfZSKFby6HOFvi/w=
 github.com/klauspost/compress v1.15.0 h1:xqfchp4whNFxn5A4XFyyYtitiWI8Hy5EW59jEwcyL6U=
 github.com/klauspost/compress v1.15.0/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=

@@ -74,7 +74,7 @@ func main() {
 	start := time.Now()
 	var eg errgroup.Group
 
-	for c := 0; c < len(clients); c++ {
+	for c := range clients {
 		client := clients[c]
 		for i := 0; i < int(sessions); i++ {
 			eg.Go(func() error {
@@ -99,7 +99,7 @@ func main() {
 					}
 
 					if time.Since(start) >= duration {
-						return err
+						return nil
 					}
 				}
 			})
@@ -110,10 +110,22 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	bytes := uint64(0)
-	for _, c := range clients {
-		bytes += c.Stats.BytesRead
+	stats := make([]*iorpc.ConnStats, 0, len(clients))
+
+	for _, client := range clients {
+		stats = append(stats, client.Stats.Snapshot())
+	}
+	cost := time.Since(start)
+	for _, client := range clients {
+		client.Stop()
 	}
 
-	fmt.Printf("read %s in %s, throughput: %s/s\n", humanize.Bytes(bytes), duration, humanize.Bytes(uint64(float64(bytes)/duration.Seconds())))
+	headBytes := uint64(0)
+	bodyBytes := uint64(0)
+	for _, s := range stats {
+		headBytes += s.HeadRead
+		bodyBytes += s.BodyRead
+	}
+
+	fmt.Printf("read %s in %s, throughput: %s/s\n", humanize.Bytes(bodyBytes+headBytes), cost, humanize.Bytes(uint64(float64(bodyBytes+headBytes)/cost.Seconds())))
 }
