@@ -122,15 +122,32 @@ func main() {
 
 	headBytes := uint64(0)
 	bodyBytes := uint64(0)
+	responseNum := uint64(0)
+	failNum := uint64(0)
 	for _, s := range stats {
+		responseNum += s.RPCCalls
+		failNum += s.ReadErrors
 		headBytes += s.HeadRead
 		bodyBytes += s.BodyRead
 	}
 
 	fmt.Printf(`
-Summary:
-    Read %s of head and %s of body in %s, total throughput: %s/s	
-    `,
-		humanize.Bytes(headBytes), humanize.Bytes(bodyBytes), cost, humanize.Bytes(uint64(float64(bodyBytes+headBytes)/cost.Seconds())),
+Summary: %d calls in %s
+  Read head: %s
+  Read body: %s
+  Total throughput: %s/s
+  Rps: %d/s
+  Failures: %d
+  Head/resp: %s
+  Body/resp: %s 
+`,
+		responseNum, cost,
+		humanize.IBytes(headBytes),
+		humanize.IBytes(bodyBytes),
+		humanize.IBytes(uint64(float64(bodyBytes+headBytes)/cost.Seconds())),
+		responseNum/uint64(cost.Seconds()),
+		failNum,
+		humanize.IBytes(headBytes/responseNum),
+		humanize.IBytes(bodyBytes/responseNum),
 	)
 }
