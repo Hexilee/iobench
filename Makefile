@@ -30,6 +30,9 @@ bench-tcp:
 bench-iorpc:
 	cd go/client/iorpc && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) SESSIONS=64 IORPC_PORT=$(IORPC_PORT) go run .
 
+bench-memory:
+	cd go/client/memory && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) go run .
+
 run-rust-server: ensure-bigdata 
 	cargo run $(CARGO_DEV_OPTIONS) --release
 
