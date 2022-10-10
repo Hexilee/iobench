@@ -12,6 +12,7 @@ MOCK_BANDWIDTH?=100GiB
 MOCK_LATENCY?=1ms
 WORKERS?=400
 TIME?=30s
+SESSIONS?=64
 CARGO_DEV_OPTIONS=--manifest-path=rust/Cargo.toml
 
 
@@ -19,19 +20,19 @@ bench: ensure-bench-tool
 	$(OUTPUT_DIR)/bin/oha -c $(WORKERS) -z $(TIME) http://$(HOST):$(PORT)/$(TARGET) && curl http://$(HOST):$(PORT)/stat/$(TARGET)
 
 bench-h2c:
-	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 -f 128K http://$(HOST):$(H2C_PORT)/$(TARGET) && curl http://$(HOST):$(H2C_PORT)/stat/$(TARGET)
+	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m $(SESSIONS) -f 128K http://$(HOST):$(H2C_PORT)/$(TARGET) && curl http://$(HOST):$(H2C_PORT)/stat/$(TARGET)
 
 bench-http2:
-	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m 64 -f 128K https://$(HOST):$(HTTP2_PORT)/$(TARGET) && curl --insecure https://$(HOST):$(HTTP2_PORT)/stat/$(TARGET)
+	h2load -D $(TIME) -t 8 -c $$(( $(WORKERS) / 4 + 1 )) -m $(SESSIONS) -f 128K https://$(HOST):$(HTTP2_PORT)/$(TARGET) && curl --insecure https://$(HOST):$(HTTP2_PORT)/stat/$(TARGET)
 
 bench-tcp: 
 	cd go/client/tcp && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) TCP_PORT=$(TCP_PORT) go run .
 
 bench-iorpc:
-	cd go/client/iorpc && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) SESSIONS=64 IORPC_PORT=$(IORPC_PORT) go run .
+	cd go/client/iorpc && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) SESSIONS=$(SESSIONS) IORPC_PORT=$(IORPC_PORT) go run .
 
 bench-memory:
-	cd go/client/memory && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) go run .
+	cd go/client/memory && TIME=$(TIME) WORKERS=$$(( $(WORKERS) / 4 + 1 )) RANDOM=$(RANDOM) go run .
 
 run-rust-server: ensure-bigdata 
 	cargo run $(CARGO_DEV_OPTIONS) --release

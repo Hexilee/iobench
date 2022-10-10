@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
@@ -74,48 +75,55 @@ func main() {
 	start := time.Now()
 	var eg errgroup.Group
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	for c := range clients {
 		client := clients[c]
 		for i := 0; i < int(sessions); i++ {
 			eg.Go(func() error {
 				for {
-					req := iorpc.Request{}
-					if mode == modeWithHeaders {
-						req.Headers = map[string]any{
-							"Size":   uint64(128 * 1024),
-							"Offset": uint64(0),
-						}
-					}
-
-					if mode == modeRandomOffset {
-						req.Headers = map[string]any{
-							"Size":   uint64(128 * 1024),
-							"Offset": rand.Uint64() % (60 * 1024 * 1024 * 1024),
-						}
-					}
-					_, err := client.Call(req)
-					if err != nil {
-						return err
-					}
-
-					if time.Since(start) >= duration {
+					select {
+					case <-ctx.Done():
 						return nil
+					default:
+						req := iorpc.Request{}
+						if mode == modeWithHeaders {
+							req.Headers = map[string]any{
+								"Size":   uint64(128 * 1024),
+								"Offset": uint64(0),
+							}
+						}
+
+						if mode == modeRandomOffset {
+							req.Headers = map[string]any{
+								"Size":   uint64(128 * 1024),
+								"Offset": rand.Uint64() % (60 * 1024 * 1024 * 1024),
+							}
+						}
+						_, err := client.Call(req)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			})
 		}
 	}
 
+	time.Sleep(duration)
+
+	stats := make([]*iorpc.ConnStats, 0, len(clients))
+	for _, client := range clients {
+		stats = append(stats, client.Stats.Snapshot())
+	}
+
+	cost := time.Since(start)
+
+	cancel()
 	if err := eg.Wait(); err != nil {
 		log.Fatalln(err)
 	}
 
-	stats := make([]*iorpc.ConnStats, 0, len(clients))
-
-	for _, client := range clients {
-		stats = append(stats, client.Stats.Snapshot())
-	}
-	cost := time.Since(start)
 	for _, client := range clients {
 		client.Stop()
 	}
