@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"strconv"
 	"time"
@@ -67,10 +69,16 @@ func init() {
 }
 
 func main() {
+	go func() {
+		// http://localhost:8888/debug/pprof/
+		log.Println(http.ListenAndServe(":8888", nil))
+	}()
 	fmt.Printf("Dialing server :%d with %d x workers(%d) sessions...\n", port, sessions, workers)
-	clients := make([]*iorpc.Client, 0, workers)
+	clients := make([]*iorpc.DispatchClient[iorpcbench.ReadDataHeaders, iorpc.NoopHeaders], 0, workers)
 	for i := 0; i < int(workers); i++ {
-		clients = append(clients, iorpcbench.NewClient("localhost:"+strconv.Itoa(int(port)), 1))
+		c := iorpcbench.NewClient("localhost:"+strconv.Itoa(int(port)), 1)
+		c.RequestTimeout = 10 * time.Hour
+		clients = append(clients, iorpc.NewDispatchClient[iorpcbench.ReadDataHeaders, iorpc.NoopHeaders](iorpcbench.ServiceReadData, c))
 	}
 	start := time.Now()
 	var eg errgroup.Group
@@ -86,23 +94,21 @@ func main() {
 					case <-ctx.Done():
 						return nil
 					default:
-						req := iorpc.Request{}
+						headers := iorpcbench.ReadDataHeaders{}
 						if mode == modeWithHeaders {
-							req.Headers = map[string]any{
-								"Size":   uint64(128 * 1024),
-								"Offset": uint64(0),
-							}
+							headers.Size = 128 * 1024
 						}
 
 						if mode == modeRandomOffset {
-							req.Headers = map[string]any{
-								"Size":   uint64(128 * 1024),
-								"Offset": rand.Uint64() % (60 * 1024 * 1024 * 1024),
-							}
+							headers.Size = 128 * 1024
+							headers.Offset = rand.Uint64() % (60 * 1024 * 1024 * 1024)
 						}
-						_, err := client.Call(req)
+						resp, err := client.Call(headers, 0, nil)
 						if err != nil {
 							return err
+						}
+						if resp.Body != nil {
+							resp.Body.Close()
 						}
 					}
 				}
@@ -114,7 +120,7 @@ func main() {
 
 	stats := make([]*iorpc.ConnStats, 0, len(clients))
 	for _, client := range clients {
-		stats = append(stats, client.Stats.Snapshot())
+		stats = append(stats, client.RawClient().Stats.Snapshot())
 	}
 
 	cost := time.Since(start)
@@ -125,7 +131,7 @@ func main() {
 	}
 
 	for _, client := range clients {
-		client.Stop()
+		client.RawClient().Stop()
 	}
 
 	headBytes := uint64(0)

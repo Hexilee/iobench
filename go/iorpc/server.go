@@ -1,6 +1,7 @@
 package iorpcbench
 
 import (
+	"encoding/binary"
 	"errors"
 	"io"
 	"os"
@@ -8,6 +9,87 @@ import (
 
 	"github.com/hexilee/iorpc"
 )
+
+var (
+	Dispatcher      = iorpc.NewDispatcher()
+	ServiceNoop     iorpc.Service
+	ServiceReadData iorpc.Service
+)
+
+type ReadDataHeaders struct {
+	Size   uint64
+	Offset uint64
+}
+
+func (h ReadDataHeaders) IsEmpty() bool {
+	return h.Size == 0 && h.Offset == 0
+}
+
+func (h ReadDataHeaders) Marshal(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, h)
+}
+
+func (h ReadDataHeaders) Unmarshal(r io.ReadCloser) (any, error) {
+	defer r.Close()
+	err := binary.Read(r, binary.LittleEndian, &h)
+	if err != nil {
+		return nil, err
+	}
+	return h, nil
+}
+
+func init() {
+	ServiceNoop, _ = Dispatcher.AddService("Noop", func(clientAddr string, request iorpc.Request) (response *iorpc.Response, err error) {
+		return &iorpc.Response{}, nil
+	})
+
+	ServiceReadData, _ = Dispatcher.AddService(
+		"ReadData",
+		iorpc.Dispatch(
+			func(clientAddr string, request iorpc.DispatchRequest[ReadDataHeaders]) (*iorpc.DispatchResponse[iorpc.NoopHeaders], error) {
+				if request.Body != nil {
+					request.Body.Close()
+				}
+
+				size := uint64(128 * 1024)
+				offset := request.Headers.Offset
+
+				if request.Headers.Size != 0 {
+					size = request.Headers.Size
+				}
+
+				switch ret := filePool.Get().(type) {
+				case error:
+					return nil, ret
+				case *File:
+					stat, err := ret.Stat()
+					if err != nil {
+						return nil, err
+					}
+					fileSize := stat.Size()
+					if offset >= uint64(fileSize) {
+						return nil, errors.New("bad request, offset out of range")
+					}
+
+					if offset > 0 {
+						ret.Seek(int64(offset), 0)
+					}
+
+					if offset+size > uint64(fileSize) {
+						size = uint64(fileSize) - offset
+					}
+					ret.Limit = size
+					return &iorpc.DispatchResponse[iorpc.NoopHeaders]{
+						Size: size,
+						Body: ret,
+					}, nil
+				default:
+					return nil, errors.New("unknown type in file pool")
+				}
+			},
+		),
+	)
+}
 
 var filePool = sync.Pool{
 	New: func() any {
@@ -49,53 +131,7 @@ func ListenAndServe(addr string) error {
 		Addr: addr,
 
 		// Echo handler - just return back the message we received from the client
-		Handler: func(clientAddr string, request iorpc.Request) (*iorpc.Response, error) {
-			if request.Body != nil {
-				request.Body.Close()
-			}
-
-			size := uint64(128 * 1024)
-			offset := uint64(0)
-
-			if len(request.Headers) != 0 {
-				if s, ok := request.Headers["Size"].(uint64); ok {
-					size = s
-				}
-
-				if o, ok := request.Headers["Offset"].(uint64); ok {
-					offset = o
-				}
-			}
-
-			switch ret := filePool.Get().(type) {
-			case error:
-				return nil, ret
-			case *File:
-				stat, err := ret.Stat()
-				if err != nil {
-					return nil, err
-				}
-				fileSize := stat.Size()
-				if offset >= uint64(fileSize) {
-					return nil, errors.New("bad request, offset out of range")
-				}
-
-				if offset > 0 {
-					ret.Seek(int64(offset), 0)
-				}
-
-				if offset+size > uint64(fileSize) {
-					size = uint64(fileSize) - offset
-				}
-				ret.Limit = size
-				return &iorpc.Response{
-					Size: size,
-					Body: ret,
-				}, nil
-			default:
-				return nil, errors.New("unknown type in file pool")
-			}
-		},
+		Handler: Dispatcher.HandlerFunc(),
 	}
 	s.CloseBody = true
 	return s.Serve()
