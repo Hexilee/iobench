@@ -86,7 +86,9 @@ func main() {
 					case <-ctx.Done():
 						return nil
 					default:
-						req := iorpc.Request{}
+						req := iorpc.Request{
+							Service: iorpcbench.ServiceReadData,
+						}
 						if mode == modeWithHeaders {
 							req.Headers = map[string]any{
 								"Size":   uint64(128 * 1024),

@@ -9,47 +9,19 @@ import (
 	"github.com/hexilee/iorpc"
 )
 
-var filePool = sync.Pool{
-	New: func() any {
-		file, err := os.OpenFile("../data/tmp/bigdata", os.O_RDONLY, 0)
-		if err != nil {
-			return err
-		}
-		return &File{File: file}
-	},
-}
+var (
+	Dispatcher      = iorpc.NewDispatcher()
+	ServiceNoop     iorpc.Service
+	ServiceReadData iorpc.Service
+)
 
-type File struct {
-	*os.File
-	Limit uint64
-}
-
-func (f *File) Close() error {
-	_, err := f.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-	f.Limit = 0
-	filePool.Put(f)
-	return nil
-}
-
-func (f *File) WriteTo(w io.Writer) (int64, error) {
-	var reader io.Reader = f.File
-	if f.Limit > 0 {
-		reader = io.LimitReader(reader, int64(f.Limit))
-	}
-	return io.Copy(w, reader)
-}
-
-func ListenAndServe(addr string) error {
-	// Start rpc server serving registered service.
-	s := &iorpc.Server{
-		// Accept clients on this TCP address.
-		Addr: addr,
-
-		// Echo handler - just return back the message we received from the client
-		Handler: func(clientAddr string, request iorpc.Request) (*iorpc.Response, error) {
+func init() {
+	ServiceNoop, _ = Dispatcher.AddService("Noop", func(clientAddr string, request iorpc.Request) (response *iorpc.Response, err error) {
+		return &iorpc.Response{}, nil
+	})
+	ServiceReadData, _ = Dispatcher.AddService(
+		"ReadData",
+		func(clientAddr string, request iorpc.Request) (*iorpc.Response, error) {
 			if request.Body != nil {
 				request.Body.Close()
 			}
@@ -96,6 +68,50 @@ func ListenAndServe(addr string) error {
 				return nil, errors.New("unknown type in file pool")
 			}
 		},
+	)
+}
+
+var filePool = sync.Pool{
+	New: func() any {
+		file, err := os.OpenFile("../data/tmp/bigdata", os.O_RDONLY, 0)
+		if err != nil {
+			return err
+		}
+		return &File{File: file}
+	},
+}
+
+type File struct {
+	*os.File
+	Limit uint64
+}
+
+func (f *File) Close() error {
+	_, err := f.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+	f.Limit = 0
+	filePool.Put(f)
+	return nil
+}
+
+func (f *File) WriteTo(w io.Writer) (int64, error) {
+	var reader io.Reader = f.File
+	if f.Limit > 0 {
+		reader = io.LimitReader(reader, int64(f.Limit))
+	}
+	return io.Copy(w, reader)
+}
+
+func ListenAndServe(addr string) error {
+	// Start rpc server serving registered service.
+	s := &iorpc.Server{
+		// Accept clients on this TCP address.
+		Addr: addr,
+
+		// Echo handler - just return back the message we received from the client
+		Handler: Dispatcher.HandlerFunc(),
 	}
 	s.CloseBody = true
 	return s.Serve()

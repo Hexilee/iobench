@@ -2,6 +2,10 @@ module github.com/hexilee/iobench/go
 
 go 1.19
 
+replace (
+	github.com/hexilee/iorpc => ../../iorpc
+)
+
 require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/felixge/fgprof v0.9.3
