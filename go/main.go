@@ -79,6 +79,13 @@ func main() {
 		}
 	}()
 
+	go func() {
+		fmt.Println("Starting splice server on :8006...")
+		if err := NewSendFileServer("../data/data").ListenAndServe(":8006"); err != nil {
+			log.Fatal("splice server failed: ", err)
+		}
+	}()
+
 	fmt.Println("Starting http1 server on :8000...")
 	server := http.Server{
 		Addr:    ":8000",
