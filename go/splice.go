@@ -6,7 +6,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/hanwen/go-fuse/splice"
+	"github.com/hexilee/iorpc/splice"
 )
 
 const (
