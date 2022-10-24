@@ -22,10 +22,7 @@ func init() {
 	ServiceReadData, _ = Dispatcher.AddService(
 		"ReadData",
 		func(clientAddr string, request iorpc.Request) (*iorpc.Response, error) {
-			if request.Body != nil {
-				request.Body.Close()
-			}
-
+			request.Body.Close()
 			size := uint64(128 * 1024)
 			offset := uint64(0)
 
@@ -61,8 +58,10 @@ func init() {
 				}
 				ret.Limit = size
 				return &iorpc.Response{
-					Size: size,
-					Body: ret,
+					Body: iorpc.Body{
+						Size:   size,
+						Reader: ret,
+					},
 				}, nil
 			default:
 				return nil, errors.New("unknown type in file pool")
