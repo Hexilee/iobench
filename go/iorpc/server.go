@@ -2,7 +2,6 @@ package iorpcbench
 
 import (
 	"errors"
-	"io"
 	"os"
 	"sync"
 
@@ -40,7 +39,7 @@ func init() {
 			case error:
 				return nil, ret
 			case *File:
-				stat, err := ret.Stat()
+				stat, err := ret.file.Stat()
 				if err != nil {
 					return nil, err
 				}
@@ -50,13 +49,13 @@ func init() {
 				}
 
 				if offset > 0 {
-					ret.Seek(int64(offset), 0)
+					ret.file.Seek(int64(offset), 0)
 				}
 
 				if offset+size > uint64(fileSize) {
 					size = uint64(fileSize) - offset
 				}
-				ret.Limit = size
+
 				return &iorpc.Response{
 					Body: iorpc.Body{
 						Size:   size,
@@ -76,31 +75,29 @@ var filePool = sync.Pool{
 		if err != nil {
 			return err
 		}
-		return &File{File: file}
+		return &File{file: file}
 	},
 }
 
 type File struct {
-	*os.File
-	Limit uint64
+	file *os.File
 }
 
 func (f *File) Close() error {
-	_, err := f.Seek(0, 0)
+	_, err := f.file.Seek(0, 0)
 	if err != nil {
 		return err
 	}
-	f.Limit = 0
 	filePool.Put(f)
 	return nil
 }
 
-func (f *File) WriteTo(w io.Writer) (int64, error) {
-	var reader io.Reader = f.File
-	if f.Limit > 0 {
-		reader = io.LimitReader(reader, int64(f.Limit))
-	}
-	return io.Copy(w, reader)
+func (f *File) File() *os.File {
+	return f.file
+}
+
+func (f *File) Read(p []byte) (n int, err error) {
+	return f.file.Read(p)
 }
 
 func ListenAndServe(addr string) error {

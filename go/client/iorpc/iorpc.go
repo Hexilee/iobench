@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/dustin/go-humanize"
 	iorpcbench "github.com/hexilee/iobench/go/iorpc"
@@ -67,6 +70,10 @@ func init() {
 }
 
 func main() {
+	// run pprof server on
+	go func() {
+		log.Println(http.ListenAndServe("localhost:8888", nil))
+	}()
 	fmt.Printf("Dialing server :%d with %d x workers(%d) sessions...\n", port, sessions, workers)
 	clients := make([]*iorpc.Client, 0, workers)
 	for i := 0; i < int(workers); i++ {
@@ -102,7 +109,7 @@ func main() {
 								"Offset": rand.Uint64() % (60 * 1024 * 1024 * 1024),
 							}
 						}
-						_, err := client.Call(req)
+						_, err := client.CallTimeout(req, time.Hour)
 						if err != nil {
 							return err
 						}
@@ -141,7 +148,8 @@ func main() {
 		bodyBytes += s.BodyRead
 	}
 
-	fmt.Printf(`
+	if responseNum != 0 {
+		fmt.Printf(`
 Summary: %d calls in %s
   Read head: %s
   Read body: %s
@@ -151,13 +159,14 @@ Summary: %d calls in %s
   Head/resp: %s
   Body/resp: %s 
 `,
-		responseNum, cost,
-		humanize.IBytes(headBytes),
-		humanize.IBytes(bodyBytes),
-		humanize.IBytes(uint64(float64(bodyBytes+headBytes)/cost.Seconds())),
-		responseNum/uint64(cost.Seconds()),
-		failNum,
-		humanize.IBytes(headBytes/responseNum),
-		humanize.IBytes(bodyBytes/responseNum),
-	)
+			responseNum, cost,
+			humanize.IBytes(headBytes),
+			humanize.IBytes(bodyBytes),
+			humanize.IBytes(uint64(float64(bodyBytes+headBytes)/cost.Seconds())),
+			responseNum/uint64(cost.Seconds()),
+			failNum,
+			humanize.IBytes(headBytes/responseNum),
+			humanize.IBytes(bodyBytes/responseNum),
+		)
+	}
 }
