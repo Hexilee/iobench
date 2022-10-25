@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	spliceOffset = 1
-	spliceSize   = 128 * 1024
+	spliceSize = 128 * 1024
+)
+
+var (
+	spliceOffset int64 = 1
 )
 
 type SpliceServer struct {
@@ -61,7 +64,7 @@ func (s *SpliceServer) handleConn(conn net.Conn) {
 
 	for {
 		written := 0
-		_, err := pair.LoadFromAt(s.file.Fd(), spliceSize, spliceOffset)
+		_, err := pair.LoadFromAt(s.file.Fd(), spliceSize, &spliceOffset)
 		if err != nil {
 			log.Printf("pair.LoadFromAt() failed: %v", err)
 			break
