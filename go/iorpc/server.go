@@ -3,7 +3,6 @@ package iorpcbench
 import (
 	"errors"
 	"os"
-	"sync"
 
 	"github.com/hexilee/iorpc"
 )
@@ -12,6 +11,11 @@ var (
 	Dispatcher      = iorpc.NewDispatcher()
 	ServiceNoop     iorpc.Service
 	ServiceReadData iorpc.Service
+)
+
+var (
+	dataFile *os.File
+	fileSize int64
 )
 
 func init() {
@@ -35,48 +39,24 @@ func init() {
 				}
 			}
 
-			switch ret := filePool.Get().(type) {
-			case error:
-				return nil, ret
-			case *File:
-				stat, err := ret.file.Stat()
-				if err != nil {
-					return nil, err
-				}
-				fileSize := stat.Size()
-				if offset >= uint64(fileSize) {
-					return nil, errors.New("bad request, offset out of range")
-				}
-
-				if offset > 0 {
-					ret.file.Seek(int64(offset), 0)
-				}
-
-				if offset+size > uint64(fileSize) {
-					size = uint64(fileSize) - offset
-				}
-
-				return &iorpc.Response{
-					Body: iorpc.Body{
-						Size:   size,
-						Reader: ret,
-					},
-				}, nil
-			default:
-				return nil, errors.New("unknown type in file pool")
+			if offset >= uint64(fileSize) {
+				return nil, errors.New("bad request, offset out of range")
 			}
+
+			if offset+size > uint64(fileSize) {
+				size = uint64(fileSize) - offset
+			}
+
+			return &iorpc.Response{
+				Body: iorpc.Body{
+					Offset:   offset,
+					Size:     size,
+					Reader:   &File{file: dataFile},
+					NotClose: true,
+				},
+			}, nil
 		},
 	)
-}
-
-var filePool = sync.Pool{
-	New: func() any {
-		file, err := os.OpenFile("../data/tmp/bigdata", os.O_RDONLY, 0)
-		if err != nil {
-			return err
-		}
-		return &File{file: file}
-	},
 }
 
 type File struct {
@@ -84,12 +64,7 @@ type File struct {
 }
 
 func (f *File) Close() error {
-	_, err := f.file.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-	filePool.Put(f)
-	return nil
+	return f.file.Close()
 }
 
 func (f *File) File() *os.File {
@@ -101,6 +76,16 @@ func (f *File) Read(p []byte) (n int, err error) {
 }
 
 func ListenAndServe(addr string) error {
+	file, err := os.OpenFile("../data/tmp/bigdata", os.O_RDONLY, 0)
+	if err != nil {
+		return err
+	}
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	dataFile, fileSize = file, stat.Size()
+
 	// Start rpc server serving registered service.
 	s := &iorpc.Server{
 		// Accept clients on this TCP address.

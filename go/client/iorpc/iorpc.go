@@ -79,6 +79,11 @@ func main() {
 	for i := 0; i < int(workers); i++ {
 		clients = append(clients, iorpcbench.NewClient("localhost:"+strconv.Itoa(int(port)), 1))
 	}
+	defer func() {
+		for _, client := range clients {
+			client.Stop()
+		}
+	}()
 	start := time.Now()
 	var eg errgroup.Group
 
@@ -131,10 +136,6 @@ func main() {
 	cancel()
 	if err := eg.Wait(); err != nil {
 		log.Fatalln(err)
-	}
-
-	for _, client := range clients {
-		client.Stop()
 	}
 
 	headBytes := uint64(0)
