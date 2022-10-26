@@ -23,6 +23,7 @@ type Mode string
 const (
 	modeWithHeaders  = "with-headers"
 	modeRandomOffset = "random"
+	modeReadMemory   = "memory"
 )
 
 var (
@@ -114,7 +115,12 @@ func main() {
 								"Offset": rand.Uint64() % (60 * 1024 * 1024 * 1024),
 							}
 						}
-						_, err := client.CallTimeout(req, time.Hour)
+
+						if mode == modeReadMemory {
+							req.Service = iorpcbench.ServiceReadMemory
+						}
+
+						_, err := client.Call(req)
 						if err != nil {
 							return err
 						}

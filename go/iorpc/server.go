@@ -8,14 +8,19 @@ import (
 )
 
 var (
-	Dispatcher      = iorpc.NewDispatcher()
-	ServiceNoop     iorpc.Service
-	ServiceReadData iorpc.Service
+	Dispatcher        = iorpc.NewDispatcher()
+	ServiceNoop       iorpc.Service
+	ServiceReadData   iorpc.Service
+	ServiceReadMemory iorpc.Service
 )
+
+type StaticBuffer []byte
 
 var (
 	dataFile *os.File
 	fileSize int64
+
+	staticData = make(StaticBuffer, 128*1024)
 )
 
 func init() {
@@ -53,6 +58,19 @@ func init() {
 					Size:     size,
 					Reader:   &File{file: dataFile},
 					NotClose: true,
+				},
+			}, nil
+		},
+	)
+
+	ServiceReadMemory, _ = Dispatcher.AddService(
+		"ReadMemory",
+		func(clientAddr string, request iorpc.Request) (*iorpc.Response, error) {
+			request.Body.Close()
+			return &iorpc.Response{
+				Body: iorpc.Body{
+					Size:   uint64(len(staticData)),
+					Reader: staticData,
 				},
 			}, nil
 		},
@@ -96,4 +114,17 @@ func ListenAndServe(addr string) error {
 	}
 	s.CloseBody = true
 	return s.Serve()
+}
+
+func (b StaticBuffer) Buffer() [][]byte {
+	return [][]byte{b}
+}
+
+func (b StaticBuffer) Close() error {
+	return nil
+}
+
+func (b StaticBuffer) Read(p []byte) (n int, err error) {
+	n = copy(p, b)
+	return
 }
