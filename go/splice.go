@@ -64,7 +64,7 @@ func (s *SpliceServer) handleConn(conn net.Conn) {
 
 	for {
 		written := 0
-		_, err := pair.LoadFromAt(s.file.Fd(), spliceSize, &spliceOffset)
+		_, err := pair.LoadFromAt(s.file.Fd(), spliceSize, &spliceOffset, splice.SPLICE_F_MOVE)
 		if err != nil {
 			log.Printf("pair.LoadFromAt() failed: %v", err)
 			break
@@ -72,7 +72,7 @@ func (s *SpliceServer) handleConn(conn net.Conn) {
 		var writeError error
 		err = tcpConn.Write(func(fd uintptr) (done bool) {
 			var n int
-			n, writeError = pair.WriteTo(fd, spliceSize-written)
+			n, writeError = pair.WriteTo(fd, spliceSize-written, splice.SPLICE_F_NONBLOCK|splice.SPLICE_F_MOVE|splice.SPLICE_F_MORE)
 			if err != nil {
 				log.Printf("pair.WriteTo() failed: %v", err)
 				return true
