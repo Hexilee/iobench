@@ -103,16 +103,16 @@ func main() {
 							Service: iorpcbench.ServiceReadData,
 						}
 						if mode == modeWithHeaders {
-							req.Headers = map[string]any{
-								"Size":   uint64(128 * 1024),
-								"Offset": uint64(0),
+							req.Headers = &iorpcbench.ReadHeaders{
+								Offset: 0,
+								Size:   128 * 1024,
 							}
 						}
 
 						if mode == modeRandomOffset {
-							req.Headers = map[string]any{
-								"Size":   uint64(128 * 1024),
-								"Offset": rand.Uint64() % (60 * 1024 * 1024 * 1024),
+							req.Headers = &iorpcbench.ReadHeaders{
+								Size:   128 * 1024,
+								Offset: rand.Uint64() % (60 * 1024 * 1024 * 1024),
 							}
 						}
 
@@ -120,7 +120,7 @@ func main() {
 							req.Service = iorpcbench.ServiceReadMemory
 						}
 
-						_, err := client.Call(req)
+						_, err := client.CallTimeout(req, time.Hour)
 						if err != nil {
 							return err
 						}

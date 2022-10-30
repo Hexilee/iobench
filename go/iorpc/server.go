@@ -1,7 +1,9 @@
 package iorpcbench
 
 import (
+	"encoding/binary"
 	"errors"
+	"io"
 	"os"
 
 	"github.com/hexilee/iorpc"
@@ -15,6 +17,17 @@ var (
 )
 
 type StaticBuffer []byte
+type ReadHeaders struct {
+	Offset, Size uint64
+}
+
+func (h *ReadHeaders) Encode(w io.Writer) error {
+	return binary.Write(w, binary.BigEndian, *h)
+}
+
+func (h *ReadHeaders) Decode(r io.Reader) error {
+	return binary.Read(r, binary.BigEndian, h)
+}
 
 var (
 	dataFile *os.File
@@ -24,6 +37,10 @@ var (
 )
 
 func init() {
+	iorpc.RegisterHeaders(func() iorpc.Headers {
+		return new(ReadHeaders)
+	})
+
 	ServiceNoop, _ = Dispatcher.AddService("Noop", func(clientAddr string, request iorpc.Request) (response *iorpc.Response, err error) {
 		return &iorpc.Response{}, nil
 	})
@@ -32,15 +49,12 @@ func init() {
 		func(clientAddr string, request iorpc.Request) (*iorpc.Response, error) {
 			request.Body.Close()
 			size := uint64(128 * 1024)
-			offset := uint64(0)
+			offset := uint64(1)
 
-			if len(request.Headers) != 0 {
-				if s, ok := request.Headers["Size"].(uint64); ok {
-					size = s
-				}
-
-				if o, ok := request.Headers["Offset"].(uint64); ok {
-					offset = o
+			if request.Headers != nil {
+				if headers := request.Headers.(*ReadHeaders); headers != nil {
+					size = headers.Size
+					offset = headers.Offset
 				}
 			}
 
@@ -85,8 +99,8 @@ func (f *File) Close() error {
 	return f.file.Close()
 }
 
-func (f *File) File() *os.File {
-	return f.file
+func (f *File) File() uintptr {
+	return f.file.Fd()
 }
 
 func (f *File) Read(p []byte) (n int, err error) {
